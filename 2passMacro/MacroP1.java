@@ -1,0 +1,115 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+
+public class MacroP1 {
+
+	public static void main(String[] args) throws IOException{
+		BufferedReader br=new BufferedReader(new FileReader("input2.txt"));
+		
+		// store name of macro and its details in a table
+		FileWriter mnt=new FileWriter("mnt.txt");
+		// MDT is a table of text lines. Every line of each macro definition except the MACRO line, is stored in the MDT 
+		FileWriter mdt=new FileWriter("mdt.txt");
+
+		// keyword parameter table
+		FileWriter kpdt=new FileWriter("kpdt.txt");
+		
+		// Parameter Name Table [PNTAB] - Fields - Parameter Name 
+		FileWriter pnt=new FileWriter("pntab.txt");
+		
+		LinkedHashMap<String, Integer> pntab=new LinkedHashMap<>();
+		String line;
+		String Macroname = null;
+		int mdtp=1,kpdtp=0,paramNo=1,pp=0,kp=0,flag=0;
+		while((line=br.readLine())!=null)
+		{
+			
+			String parts[]=line.split("\\s+");
+			if(parts[0].equalsIgnoreCase("MACRO"))
+			{
+				flag=1;
+				line=br.readLine();
+				parts=line.split("\\s+");
+				Macroname=parts[0];
+				if(parts.length<=1)
+				{
+					mnt.write(parts[0]+"\t"+pp+"\t"+kp+"\t"+mdtp+"\t"+(kp==0?-1:(kpdtp+1))+"\n");
+					continue;
+				}
+				for(int i=1;i<parts.length;i++) //processing of parameters
+				{
+					parts[i]=parts[i].replaceAll("[&,]", "");
+					
+					if(parts[i].contains("="))
+					{
+						++kp;
+						String keywordParam[]=parts[i].split("=");
+						pntab.put(keywordParam[0], paramNo++);
+						if(keywordParam.length==2)
+						{
+							kpdt.write(keywordParam[0]+"\t"+keywordParam[1]+"\n");
+						}
+						else
+						{
+							kpdt.write(keywordParam[0]+"\t-\n");
+						}
+					}
+					else
+					{
+						pntab.put(parts[i], paramNo++);
+						pp++;
+					}
+				}
+				mnt.write(parts[0]+"\t"+pp+"\t"+kp+"\t"+mdtp+"\t"+(kp==0?-1:(kpdtp+1))+"\n");
+				kpdtp=kpdtp+kp;
+				
+				
+				
+			}
+			else if(parts[0].equalsIgnoreCase("MEND"))
+			{
+				mdt.write(line+"\n");
+				flag=kp=pp=0;
+				mdtp++;
+				paramNo=1;
+				pnt.write(Macroname+":\t");
+				Iterator<String> itr=pntab.keySet().iterator();
+				while(itr.hasNext())
+				{
+					pnt.write(itr.next()+"\t");
+				}
+				pnt.write("\n");
+				pntab.clear();
+			}
+			else if(flag==1)
+			{
+				for(int i=0;i<parts.length;i++)
+				{
+					if(parts[i].contains("&"))
+					{
+						parts[i]=parts[i].replaceAll("[&,]", "");
+						mdt.write("(P,"+pntab.get(parts[i])+")\t");
+					}
+					else
+					{
+						mdt.write(parts[i]+"\t");
+					}
+				}
+				mdt.write("\n");
+				mdtp++;
+			}
+			
+		}
+		br.close();
+		mdt.close();
+		mnt.close();
+		pnt.close();
+		kpdt.close();
+		System.out.println("DONE WITH MACRO PASS 1");
+	}
+
+}
